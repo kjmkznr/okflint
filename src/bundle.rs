@@ -5,11 +5,17 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-/// Ignore rules loaded from a `.okfignore` file at the bundle root.
+/// Ignore files read from the bundle root, in order. Patterns from all present
+/// files are combined. `.okfignore` is the original name and is still read so
+/// existing bundles keep working.
+const IGNORE_FILES: &[&str] = &[".okflintignore", ".okfignore"];
+
+/// Ignore rules loaded from `.okflintignore` (or legacy `.okfignore`) at the
+/// bundle root.
 ///
 /// A bundle may legitimately contain non-concept Markdown (READMEs, specs,
 /// contributor docs). OKF treats every non-reserved `.md` as a concept document
-/// requiring `type`, so `.okfignore` lets a bundle exclude such files.
+/// requiring `type`, so an ignore file lets a bundle exclude such files.
 ///
 /// Supported patterns (one per line, `#` comments, blank lines ignored):
 /// - `README.md`        exact path (relative to bundle root)
@@ -22,7 +28,10 @@ pub struct Ignore {
 impl Ignore {
     pub fn load(root: &Path) -> Self {
         let mut patterns = Vec::new();
-        if let Ok(text) = fs::read_to_string(root.join(".okfignore")) {
+        for file in IGNORE_FILES {
+            let Ok(text) = fs::read_to_string(root.join(file)) else {
+                continue;
+            };
             for line in text.lines() {
                 let l = line.trim();
                 if l.is_empty() || l.starts_with('#') {
@@ -51,7 +60,7 @@ fn pattern_match(pat: &str, rel: &str) -> bool {
 /// Recursively collect every `.md` file under `root` that should be linted.
 ///
 /// Dot-files and dot-directories (`.git`, `.claude`, …) are always skipped, as
-/// are anything matched by `.okfignore`. Returned paths are absolute-ish
+/// are anything matched by the ignore file. Returned paths are absolute-ish
 /// (i.e. `root` joined), sorted for stable output.
 pub fn collect_markdown(root: &Path, ignore: &Ignore) -> io::Result<Vec<PathBuf>> {
     let mut out = Vec::new();
@@ -64,7 +73,7 @@ pub fn collect_markdown(root: &Path, ignore: &Ignore) -> io::Result<Vec<PathBuf>
 /// for O(1) link-target existence checks without a `stat` syscall per link.
 ///
 /// Unlike [`collect_markdown`], this includes files of any extension and files
-/// excluded by `.okfignore` (a link may legitimately point at, say, an ignored
+/// excluded by the ignore file (a link may legitimately point at, say, an ignored
 /// `README.md` or an image). Only `.git` is skipped, as nothing links into it.
 pub fn collect_all_files(root: &Path) -> io::Result<HashSet<String>> {
     let mut set = HashSet::new();

@@ -38,3 +38,9 @@ fn invalid_bundle_has_errors() {
 fn missing_root_is_an_error() {
     assert!(lint(Path::new("tests/fixtures/does-not-exist")).is_err());
 }
+
+#[test]
+fn okflintignore_and_legacy_okfignore_are_both_honored() {
+    let diags = lint(Path::new("tests/fixtures/ignored")).unwrap();
+    assert!(diags.is_empty(), "expected no findings, got: {diags:#?}");
+}

@@ -43,15 +43,18 @@ journal/2026/06/2026-06-17.md:46: warning [OKF007] broken internal link: `/ideas
 
 Errors map to OKF MUST rules; warnings to SHOULD / tolerated rules.
 
-## `.okfignore`
+## `.okflintignore`
 
 Bundles often contain non-concept Markdown (READMEs, specs). Since OKF treats
 every non-reserved `.md` as a concept document requiring `type`, list such files
-in a `.okfignore` at the bundle root. Dot-directories (`.git`, `.claude`, …) are
+in a `.okflintignore` at the bundle root. Dot-directories (`.git`, `.claude`, …) are
 always skipped.
 
+The older name `.okfignore` is still read; if both files exist, their patterns
+are combined.
+
 ```
-# .okfignore
+# .okflintignore
 README.md
 CONTRIBUTING.md
 docs/            # a directory and everything under it
