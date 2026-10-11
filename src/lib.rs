@@ -1,6 +1,6 @@
-//! okflint — a dependency-free linter for Open Knowledge Format (OKF) v0.1 bundles.
+//! okflint — a dependency-free linter for Open Knowledge Format (OKF) v0.2 bundles.
 //!
-//! OKF v0.1 represents knowledge as a directory of Markdown files with YAML
+//! OKF v0.2 represents knowledge as a directory of Markdown files with YAML
 //! frontmatter (see <https://github.com/GoogleCloudPlatform/knowledge-catalog>).
 //! This crate validates a bundle against the spec's MUST rules (reported as
 //! errors) and its SHOULD / tolerated rules (reported as warnings).
@@ -113,11 +113,24 @@ fn check_file(root: &Path, path: &Path, all_files: &HashSet<String>, out: &mut V
 
     match basename.as_str() {
         "index.md" => {
-            checks::check_index_frontmatter(&rel, &doc, out);
-            checks::check_okf_version(&rel, &doc, out);
+            let is_root = rel == "index.md";
+            checks::check_index_frontmatter(&rel, &doc, is_root, out);
+            if is_root {
+                checks::check_okf_version(&rel, &doc, out);
+            }
         }
         "log.md" => checks::check_log_headings(&rel, &content, out),
-        _ => checks::check_concept_type(&rel, &doc, out),
+        _ => {
+            checks::check_concept_type(&rel, &doc, out);
+            // v0.2 trust / lifecycle / provenance / computation families (§5, §10).
+            // All optional; absence is never a finding.
+            checks::check_status(&rel, &doc, out);
+            checks::check_timestamps(&rel, &doc, out);
+            checks::check_actors(&rel, &doc, out);
+            checks::check_structure(&rel, &doc, out);
+            checks::check_attested(&rel, &doc, &content, out);
+            checks::check_footnotes(&rel, &doc, &content, out);
+        }
     }
 
     checks::check_timestamp(&rel, &doc, out);

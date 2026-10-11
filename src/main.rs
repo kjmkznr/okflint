@@ -4,7 +4,7 @@ use std::process::ExitCode;
 use okflint::{counts, lint};
 
 const HELP: &str = "\
-okflint — a linter for Open Knowledge Format (OKF) v0.1 bundles
+okflint — a linter for Open Knowledge Format (OKF) v0.2 bundles
 
 USAGE:
     okflint [OPTIONS] [PATH]
