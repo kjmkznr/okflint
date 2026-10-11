@@ -2,12 +2,13 @@
 //!
 //! Diagnostic codes:
 //! - OKF001  concept document is missing the required `type` field
-//! - OKF002  `index.md` must not contain frontmatter
+//! - OKF002  `index.md` frontmatter contains non-`okf_version` fields
 //! - OKF003  frontmatter was opened with `---` but never closed
 //! - OKF004  `log.md` date heading is not an ISO 8601 `YYYY-MM-DD`
 //! - OKF005  `log.md` entries are not ordered newest-first  (warning)
 //! - OKF006  `timestamp` field is not a valid ISO 8601 value  (warning)
 //! - OKF007  broken internal link  (warning; OKF consumers must tolerate)
+//! - OKF008  `okf_version` in `index.md` is not a valid `<major>.<minor>` version  (warning)
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -39,11 +40,57 @@ pub fn check_concept_type(rel: &str, doc: &Doc, out: &mut Vec<Diagnostic>) {
     }
 }
 
-/// OKF002 — the reserved `index.md` must not have frontmatter.
-pub fn check_index_no_frontmatter(rel: &str, doc: &Doc, out: &mut Vec<Diagnostic>) {
-    if doc.has_frontmatter {
-        out.push(Diagnostic::error(rel, Some(1), "OKF002", "`index.md` must not contain frontmatter"));
+/// OKF002 — `index.md` frontmatter must only contain `okf_version`.
+///
+/// Per the spec, the root `index.md` MAY have frontmatter, but only to declare
+/// the OKF version (`okf_version`). Any other field is an error.
+pub fn check_index_frontmatter(rel: &str, doc: &Doc, out: &mut Vec<Diagnostic>) {
+    if !doc.has_frontmatter || !doc.fm_closed {
+        return;
     }
+    for field in &doc.fields {
+        if field.key != "okf_version" {
+            out.push(Diagnostic::error(
+                rel,
+                Some(field.line),
+                "OKF002",
+                format!(
+                    "`index.md` frontmatter may only contain `okf_version`; unexpected field `{}`",
+                    field.key
+                ),
+            ));
+        }
+    }
+}
+
+/// OKF008 — `okf_version` in `index.md` must be a valid `<major>.<minor>` version.
+///
+/// If `okf_version` is present, its value should follow the `<major>.<minor>`
+/// format (e.g. `"0.1"`). This is a warning because unknown versions are
+/// tolerated via best-effort consumption (per spec).
+pub fn check_okf_version(rel: &str, doc: &Doc, out: &mut Vec<Diagnostic>) {
+    if let Some(f) = doc.field("okf_version") {
+        if !is_valid_version(&f.value) {
+            out.push(Diagnostic::warning(
+                rel,
+                Some(f.line),
+                "OKF008",
+                format!(
+                    "`okf_version` should be a `<major>.<minor>` version string, found `{}`",
+                    f.value
+                ),
+            ));
+        }
+    }
+}
+
+/// Whether a string is a valid `<major>.<minor>` version (e.g. `"0.1"`).
+fn is_valid_version(s: &str) -> bool {
+    let parts: Vec<&str> = s.splitn(2, '.').collect();
+    if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
+        return false;
+    }
+    parts[0].parse::<u32>().is_ok() && parts[1].parse::<u32>().is_ok()
 }
 
 /// OKF004 / OKF005 — `log.md` date headings must be ISO 8601 and newest-first.

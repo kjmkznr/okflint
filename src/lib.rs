@@ -112,7 +112,10 @@ fn check_file(root: &Path, path: &Path, all_files: &HashSet<String>, out: &mut V
     }
 
     match basename.as_str() {
-        "index.md" => checks::check_index_no_frontmatter(&rel, &doc, out),
+        "index.md" => {
+            checks::check_index_frontmatter(&rel, &doc, out);
+            checks::check_okf_version(&rel, &doc, out);
+        }
         "log.md" => checks::check_log_headings(&rel, &content, out),
         _ => checks::check_concept_type(&rel, &doc, out),
     }

@@ -20,7 +20,7 @@ fn valid_bundle_is_clean() {
 #[test]
 fn invalid_bundle_reports_each_rule() {
     let found = codes("tests/fixtures/invalid");
-    for expected in ["OKF001", "OKF002", "OKF003", "OKF004", "OKF005", "OKF006", "OKF007"] {
+    for expected in ["OKF001", "OKF002", "OKF003", "OKF004", "OKF005", "OKF006", "OKF007", "OKF008"] {
         assert!(found.contains(expected), "expected {expected} in {found:?}");
     }
 }

@@ -64,7 +64,14 @@ pub fn parse(content: &str) -> Doc {
         }
         if let Some(colon) = line.find(':') {
             let key = line[..colon].trim().to_string();
-            let value = line[colon + 1..].trim().to_string();
+            let mut value = line[colon + 1..].trim().to_string();
+            // Strip surrounding quotes (single or double) from scalar values.
+            if (value.starts_with('"') && value.ends_with('"') && value.len() > 1)
+                || (value.starts_with('\'') && value.ends_with('\'') && value.len() > 1)
+            {
+                let inner = &value[1..value.len() - 1];
+                value = inner.to_string();
+            }
             if !key.is_empty() {
                 fields.push(Field { key, value, line: idx + 1 });
             }

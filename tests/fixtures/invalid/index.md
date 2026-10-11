@@ -1,7 +1,8 @@
 ---
 type: index
+okf_version: "abc"
 ---
 
 # Invalid Index
 
-This index.md wrongly has frontmatter (OKF002).
+This index.md has non-`okf_version` frontmatter (OKF002) and invalid version (OKF008).
